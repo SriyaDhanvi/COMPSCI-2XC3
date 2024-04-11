@@ -166,14 +166,16 @@ def dijkstra(graph, source, k):
         visited[i] = False
         distance[i] = float("inf")
         path[i] = []
-
         Q.insert(Item(i, float("inf")))
 
     # assign 0 to source 
     Q.decrease_key(source, 0)
     distance[source] = 0
 
+    relaxations = {node: 0 for node in range(WeightedGraph.get_number_of_nodes())}
+
     while not (Q.is_empty()):
         current_node = Q.extract_min().value
         visited[current_node] = True
     
+        for neighbor in graph.get_neigh
