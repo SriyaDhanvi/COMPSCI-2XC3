@@ -5,10 +5,10 @@ class MinHeap:
     def __init__(self, data):
         self.items = data
         self.length = len(data)
+        self.map = {}
         self.build_heap()
 
         # add a map based on input node
-        self.map = {}
         for i in range(self.length):
             self.map[self.items[i].value] = i
 
@@ -122,10 +122,8 @@ class Item:
 class WeightedGraph:
 
     def __init__(self,nodes):
-        self.graph=[]
-        self.weights={}
-        for node in range(nodes):
-            self.graph.append([])
+        self.graph = [[] for _ in range(nodes)]
+        self.weights = {}
 
     def add_node(self,node):
         self.graph[node]=[]
@@ -153,68 +151,104 @@ class WeightedGraph:
     
     def get_nodes(self,):
         return [i for i in range(len(self.graph))]
-    
+
+
+def bellman_ford(graph, source):
+    distances = [math.inf] * graph.get_number_of_nodes()
+    distances[source] = 0
+
+    for _ in range(graph.get_number_of_nodes() - 1):
+        for u in range(graph.get_number_of_nodes()):
+            for v in graph.get_neighbors(u):
+                if distances[u] != math.inf and distances[u] + graph.get_weights(u, v) < distances[v]:
+                    distances[v] = distances[u] + graph.get_weights(u, v)
+
+    return distances
+
+def dijkstra(graph, source):
+    distances = [math.inf] * graph.get_number_of_nodes()
+    previous_vertices = [None] * graph.get_number_of_nodes()
+    distances[source] = 0
+
+    min_heap = MinHeap([Item(node, distances[node]) for node in graph.get_nodes()])
+    visited = set()
+
+    while not min_heap.is_empty():
+        current_node = min_heap.extract_min().value
+        visited.add(current_node)
+
+        for neighbor in graph.get_neighbors(current_node):
+            if neighbor not in visited:
+                new_distance = distances[current_node] + graph.get_weights(current_node, neighbor)
+                if new_distance < distances[neighbor]:
+                    distances[neighbor] = new_distance
+                    previous_vertices[neighbor] = current_node  # Track previous vertex
+                    min_heap.decrease_key(neighbor, new_distance)
+
+    return distances, previous_vertices
 
 def all_pairs_shortest_path(graph):
-    n = graph.get_number_of_nodes()
-    dist = [[math.inf] * n for _ in range(n)]
-    prev = [[-1] * n for _ in range(n)]  # Store second-to-last vertex on the shortest path
+    # Add a new vertex with zero-weight edges to all other vertices
+    s = graph.get_number_of_nodes() - 1
+    for i in range(graph.get_number_of_nodes()):
+        graph.add_edge(s, i, 0)
 
-    for i in range(n):
-        dist[i][i] = 0  # Distance to itself is always 0
+    # Run Bellman-Ford algorithm from the new vertex
+    h = bellman_ford(graph, s)
 
-    for u in range(n):
-        for v in range(n):
-            if graph.are_connected(u, v):
-                dist[u][v] = graph.get_weights(u, v)
-                prev[u][v] = u
+    # Recalculate edge weights using the computed distances
+    for u in range(graph.get_number_of_nodes()):
+        for v in graph.get_neighbors(u):
+            graph.weights[(u, v)] += h[u] - h[v]
 
-    for k in range(n):
-        for i in range(n):
-            for j in range(n):
-                if dist[i][k] + dist[k][j] < dist[i][j]:
-                    dist[i][j] = dist[i][k] + dist[k][j]
-                    prev[i][j] = prev[k][j]
+    # Initialize array to store distances and previous vertices
+    distances = [[math.inf] * graph.get_number_of_nodes() for _ in range(graph.get_number_of_nodes())]
+    previous_vertices = [[None] * graph.get_number_of_nodes() for _ in range(graph.get_number_of_nodes())]
 
-    return dist, prev
+    # Run Dijkstra's algorithm for each vertex
+    for u in range(graph.get_number_of_nodes()):
+        dist, prev = dijkstra(graph, u)
+        for v in range(graph.get_number_of_nodes()):
+            distances[u][v] = dist[v] + h[v] - h[u]
+            previous_vertices[u][v] = prev[v]
+
+    return distances, previous_vertices
 
 # Example usage:
 # Positive weighted graph
-# g = WeightedGraph(8)
-# edges = [(0,1,15),(0,6,15),(0,7,20),
-#          (1,0,15),(1,2,30),(1,4,45),
-#          (2,1,30),(2,3,5),
-#          (3,2,5),(3,5,25),(3,6,30),
-#          (4,1,45),(4,5,15),
-#          (5,3,25),(5,4,15),
-#          (6,0,15),(6,3,30),
-#          (7,0,20)]
+g = WeightedGraph(8)
+edges = [(0,1,15),(0,6,15),(0,7,20),
+         (1,0,15),(1,2,30),(1,4,45),
+         (2,1,30),(2,3,5),
+         (3,2,5),(3,5,25),(3,6,30),
+         (4,1,45),(4,5,15),
+         (5,3,25),(5,4,15),
+         (6,0,15),(6,3,30),
+         (7,0,20)]
 
 # negative weighted graph 
-g = WeightedGraph(5)
-edges = [
-    (0, 1, 1),
-    (0, 2, 4),
-    (1, 2, 3),
-    (1, 3, 2),
-    (1, 4, 2),
-    (3, 1, -1),  # Negative edge weight
-    (3, 4, 5),
-    (4, 2, 1),
-]
+# g = WeightedGraph(5)
+# edges = [
+#     (0, 1, 1),
+#     (0, 2, 4),
+#     (1, 2, 3),
+#     (1, 3, 2),
+#     (1, 4, 2),
+#     (3, 1, -1),  # Negative edge weight
+#     (3, 4, 5),
+#     (4, 2, 1),
+# ]
 
-for i in edges:
-    g.add_edge(*i)
+for edge in edges:
+    g.add_edge(*edge)
 
-distances, previous = all_pairs_shortest_path(g)
+# Run all_pair_shortest_path algorithm
+distances, previous_vertices = all_pairs_shortest_path(g)
 
-# Print distances and previous vertices
-for i in range(len(distances)):
-    for j in range(len(distances[i])):
-        print(f"Shortest distance from {i} to {j}: {distances[i][j]}, Previous vertex: {previous[i][j]}")
-
-
-
+# Print the resulting distances
+for u in range(len(distances)):
+    for v in range(len(distances[u])):
+        print(f"Shortest distance from {u} to {v}: {distances[u][v]}, Previous vertex: {previous_vertices[u][v]}")
 
 
 
