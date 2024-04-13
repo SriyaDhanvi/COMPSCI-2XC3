@@ -6,7 +6,7 @@ class WeightedGraph:
         self.weights = {}
     
     def add_node(self,node):
-        self.graph[node]=[]
+        self.graph.append([])
 
     def add_edge(self, node1, node2, weight):
         if node2 not in self.graph[node1]:
