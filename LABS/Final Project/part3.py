@@ -22,7 +22,7 @@ class WeightedGraph:
     def get_neighbors(self, node):
         return self.graph[node]
 
-    def get_weight(self, node1, node2):
+    def get_weights(self, node1, node2):
         if self.are_connected(node1, node2):
             return self.weights[(node1, node2)]
         
@@ -62,7 +62,7 @@ def A_Star(graph, source, destination, heuristic):
             break
 
         for neighbor in graph.get_neighbors(current_node):
-            new_cost = cost[current_node] + graph.get_weight(current_node, neighbor)
+            new_cost = cost[current_node] + graph.get_weights(current_node, neighbor)
             if neighbor not in cost or new_cost < cost[neighbor]:
                 cost[neighbor] = new_cost
                 priority = new_cost + heuristic[neighbor]
